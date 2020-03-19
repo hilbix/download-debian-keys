@@ -1,6 +1,6 @@
 # Public Domain
 
-DEBIAN=debian-archive-keyring ubuntu-archive-keyring
+DEBIAN=debian-keyring debian-archive-keyring ubuntu-keyring ubuntu-archive-keyring
 
 .PHONY:	love
 love:	all
@@ -10,6 +10,13 @@ all:	$(DEBIAN)
 
 .PHONY:	$(DEBIAN)
 $(DEBIAN):
-	debsums -as '$@'
-	rm -rf '$@' && mkdir -p '$@' && list="$$(debsums -a '$@')" && list="$$(echo "$$list" | sed -n 's/\.gpg[[:space:]]*OK$$/.gpg/p')" && echo "$$list" | xargs -- cp -t '$@/'
+	@if debsums -as '$@'; \
+	then	n="$@-$$(dpkg -s debian-archive-keyring | sed -n 's/^Version: //p')" && \
+		rm -rf "$$n" && \
+		mkdir -vp "$$n" && \
+		list="$$(debsums -a '$@')" && \
+		list="$$(echo "$$list" | sed -n 's/\.gpg[[:space:]]*OK$$/.gpg/p')" && \
+		echo "$$list" | xargs -- cp -t "$$n" && \
+		for a in "$$n"/*.gpg; do for b in "$$a"*~; do [ ! -f "$$b" ] || cmp "$$a" "$$b" && rm -vf "$$b" || break; done; done; \
+	else true; fi
 
