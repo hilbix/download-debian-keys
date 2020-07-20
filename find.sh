@@ -7,13 +7,11 @@ x() { STDERR "exec:" "$@"; "$@"; STDERR "rc=$?:" "$@"; }
 o() { "$@" || OOPS "exec $?: $*"; }
 quiet() { "$@" >/dev/null 2>&1; }
 
-[ 2 = "$#" ] || OOPS "Usage: $0 keyfile directory"
+[ 1 = "$#" ] || OOPS "Usage: $0 directory"
 
-KEY="$1"
-DIR="$2"
-
-VER="${2##*/}"
-DIR="$(readlink -e "$DIR")" && [ -d "$DIR" ] || OOPS "not a directory: $2"
+DIR="${1%/}"
+VER="${DIR##*/}"
+DIR="$(readlink -e "$DIR")" && [ -d "$DIR" ] || OOPS "not a directory: $1"
 
 LIST=()
 for a in "$DIR"/*.sign
@@ -30,53 +28,45 @@ o cd "$HERE"
 
 verify()
 {
-local A="$(readlink -e "$1")" && [ -f "$A" ] || OOPS "internal error: missing key $1"
-local B="$(readlink -e "$2")" && [ -f "$B" ] || OOPS "internal error: missing sig $2"
-quiet gpg --no-default-keyring --keyring "$A" --verify "$2"
+local A="$(readlink -e "$1")" && [ -f "$A" ] || OOPS "internal error: missing sig $1"
+
+quiet gpg --no-default-keyring "${@:2}" --verify "$1"
 }
 
-if	[ -f "$VER/$KEY" ]
-then
-	for a in "${LIST[@]}"
-	do
-		verify "$VER/$KEY" "$a" ||
-		OOPS "bug: $PWD/$VER/$KEY does not verify "$a", something is completely wrong"
-	done
-	printf '\ntry: ln -Ts %s %s\n\n' "${HERE##*/}/$VER" "$TO/.$VER"
-	exit 0
-fi
-
-echo "trying to locate correct $HERE/$VER/$KEY"
+echo "trying to locate correct keys for $HERE/$VER"
 
 locate()
 {
 DST=
 for a
 do
-	[ -f "$a" ] || continue
+	[ -d "$a" ] || continue
+
+	ARGS=()
+	for b in "$PWD/$a"/*.gpg
+	do
+		[ -s "$b" ] && ARGS+=(--keyring "$b")
+	done
+	[ 0 != "${#ARGS[@]}" ] || OOPS "no keys found in directory $PWD/$a"
+	
 	ok=false
 	for b in "${LIST[@]}"
 	do
-		verify "$PWD/$a" "$b" && ok=: || continue 2
+		verify "$b" "${ARGS[@]}" && ok=: || continue 2
 	done
 	$ok || OOPS "internal error, empty list ${LIST[*]}"
 
-	echo "found $PWD/$a verifies $b"
+	printf 'found %q verifies %q\n' "$PWD/$a" "$DIR"
 	DST="$a"
 done
 [ -n "$DST" ]
 }
 
-if	locate copy/*/"$KEY"
+if	locate copy/*
 then
-	printf '\ntry: ln -Ts %q %q\n\n' "${DST%/*}" "$PWD/$VER"
+	printf '\ntry: ln -Ts %q %q\n\n' "$DST" "$PWD/$VER"
 	exit 0
 fi
 
-if	locate copy/*/*.pgp
-then
-	printf '\ntry: mkdir %q && ln -Ts --relative %q %q\n\n' "$PWD/$VER" "$PWD/$DST" "$PWD/$VER/$KEY"
-	exit 0
-fi
+OOPS "sorry, no matching key directory found"
 
-OOPS "sorry, no matching key found"
