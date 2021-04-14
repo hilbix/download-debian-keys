@@ -11,7 +11,7 @@ all:	$(DEBIAN)
 .PHONY:	$(DEBIAN)
 $(DEBIAN):
 	@if debsums -as '$@'; \
-	then	n="$@-$$(dpkg -s debian-archive-keyring | sed -n 's/^Version: //p')" && \
+	then	n="$@-$$(dpkg -s '$@' | sed -n 's/^Version: //p')" && \
 		rm -rf "$$n" && \
 		mkdir -vp "$$n" && \
 		list="$$(debsums -a '$@')" && \
