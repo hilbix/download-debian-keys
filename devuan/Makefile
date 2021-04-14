@@ -11,5 +11,6 @@ all:	$(GPG)
 
 .PHONY:	$(GPG)
 $(GPG):
-	curl -o '$@' '$(URL)/$@'
+	curl -s -o '$@' '$(URL)/$@'
+	@echo 'WARNING! THE DOWNLOADED KEY MIGHT BE FAKE: $@'
 
