@@ -1,0 +1,14 @@
+#!/bin/bash
+
+DIR="$1"
+shift
+for a
+do
+	b="${a##*/}"
+	if	[ ! -f "$DIR/$b" ]
+	then	cat "$a" >|"$DIR/$b"
+	elif	cmp -- "$a" "$DIR/$b"
+	then	:
+	else	printf 'MISMATCH WARNING!\nSRC %q\nDST %q\n' "$a" "$DIR/$b"
+	fi
+done
