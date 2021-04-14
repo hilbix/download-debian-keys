@@ -5,7 +5,14 @@ STDERR() { local e=$?; STDOUT "$@"; return $e; }
 OOPS() { for a; do echo "OOPS: $a"; done >&2; exit 23; }
 x() { STDERR "exec:" "$@"; "$@"; STDERR "rc=$?:" "$@"; }
 o() { "$@" || OOPS "exec $?: $*"; }
-quiet() { "$@" >/dev/null 2>&1; }
+
+if [ .-D = ".$1" ]
+then
+	shift
+	quiet() { STDERR DEBUG; x "$@"; STDERR DEBUG; }
+else
+	quiet() { "$@" >/dev/null 2>&1; }
+fi
 
 [ 1 = "$#" ] || OOPS "Usage: $0 directory"
 
@@ -33,7 +40,7 @@ local A="$(readlink -e "$1")" && [ -f "$A" ] || OOPS "internal error: missing si
 quiet gpg --no-default-keyring "${@:2}" --verify "$1"
 }
 
-echo "trying to locate correct keys for $HERE/$VER"
+echo "trying to locate correct keys for $VER in $HERE"
 
 locate()
 {
@@ -62,7 +69,7 @@ done
 [ -n "$DST" ]
 }
 
-if	locate copy/*
+if	locate copy/* devuan
 then
 	printf '\ntry: ln -Ts %q %q\n\n' "$DST" "$PWD/$VER"
 	exit 0
