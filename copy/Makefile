@@ -13,7 +13,6 @@ $(DEBIAN):
 	@if debsums -as '$@'; \
 	then	n="$@-$$(dpkg -s '$@' | sed -n 's/^Version: //p')" && \
 		rm -rf "$$n" && \
-		mkdir -vp "$$n" && \
 		list="$$(debsums -a '$@')" && \
 		list="$$(echo "$$list" | sed -n 's/\.gpg[[:space:]]*OK$$/.gpg/p')" && \
 		echo "$$list" | xargs -- ./.cmporcp "$$n" && \

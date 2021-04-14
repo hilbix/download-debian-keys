@@ -4,6 +4,7 @@ DIR="$1"
 shift
 for a
 do
+	mkdir -vp "$DIR" || exit
 	b="${a##*/}"
 	if	[ ! -f "$DIR/$b" ]
 	then	cat "$a" >|"$DIR/$b"
