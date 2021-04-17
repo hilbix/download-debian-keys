@@ -52,14 +52,23 @@ do
 	ARGS=()
 	for b in "$PWD/$a"/*.gpg
 	do
-		[ -s "$b" ] && ARGS+=(--keyring "$b")
+		[ -s "$b" ] || continue
+		ARGS+=("$b")
 	done
 	[ 0 != "${#ARGS[@]}" ] || OOPS "no keys found in directory $PWD/$a"
 	
 	ok=false
 	for b in "${LIST[@]}"
 	do
-		verify "$b" "${ARGS[@]}" && ok=: || continue 2
+		have=false
+		for c in "${ARGS[@]}"
+		do
+			verify "$b" --keyring "$c" || continue
+			have=:
+			break
+		done
+		$have || continue 2
+		ok=:
 	done
 	$ok || OOPS "internal error, empty list ${LIST[*]}"
 
@@ -75,5 +84,5 @@ then
 	exit 0
 fi
 
-OOPS "sorry, no matching key directory found"
+OOPS "sorry, no matching key directory found for ${LIST[*]}"
 
